@@ -1,4 +1,6 @@
 
-# About the project
+# Chapter 1
 
-*Write a short description about the course and add a link to your github repository here. This is an R markdown (.Rmd) file so you can use R markdown syntax. See the 'Useful links' page in the mooc area (chapter 1) for instructions.*
+I am a PhD student in linguistics with some previous experience in R and RStudio, but with this course I hope to gain more understanding in statistical methods and open data that I could use in my research.  
+
+My GitHub repository: [https://github.com/YIBiri/IODS-project](https://github.com/*your_github_username*/IODS-project)
