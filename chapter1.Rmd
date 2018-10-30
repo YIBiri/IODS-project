@@ -1,6 +1,6 @@
 
 # Chapter 1
 
-I am a PhD student in linguistics with some previous experience in R and RStudio, but with this course I hope to gain more understanding in statistical methods and open data that I could use in my research.  
+I am a PhD student in linguistics with some previous experience in R and RStudio as well as basic statistics, but with this course I hope to gain more understanding in statistical methods and open data that I could use in my research.  
 
 My GitHub repository: [https://github.com/YIBiri/IODS-project](https://github.com/YIBiri/IODS-project)
