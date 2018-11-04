@@ -3,7 +3,7 @@ title: "README"
 author: "Ylva Biri"
 date: "29 oktober 2018"
 output:
-  html_document:
+  github_document:
     theme: sandstone
     toc: true
     toc_depth: 2
