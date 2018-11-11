@@ -1,7 +1,81 @@
-# Insert chapter 2 title here
+# Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+*For the tasks this week I wrangle data into data frames in the form required for analysis. I have used the data to analyse the relationship between a dependent and an independent variable by fitting a linear regression model. I can also make plots from the residuals to diagnose the appropriateness of the model.*
+```{r echo = F }
+dt <- read.table("data/lrn14.txt")
+library(ggplot2)
+library(GGally)
+```
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+
+##Introduction
+In this analysis we investigate the how the points scored in a statistics test by a student are explained by different learning approaches and the student's attitude, age and gender. To do this, we shall analyse the explanatory powers of the different potential explanatory variables by building a regression model where exam points is the dependent variable.
+
+## Data overview
+
+The data for this analysis is a survey dataset listing the learning approaches in a statistics class. More information on its collection can be found [here](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS2-meta.txt). The data has 166 observations and 7 variables. Below follows a sample of what the dataset used the purposes of this study look like.
+
+```{r echo = F}
+head(dt, n = 5)
+```
+
+As can be seen, observations include the gender and age of the respondents as well as the attitude towards statistics, and max points. It should be noted that respondents whose score in Points equals 0 have been removed from the current 166-observation dataset. The scores for variables deep, strategic and surface approaches to learning are the means of the combined sums from individual variables: for example, _deep_ represents the mean of the scores for the following variables.
+
+```{r eval = F}
+deep <- c("D03", "D11", "D19", "D27", "D07", "D14", "D22", "D30","D06",  "D15", "D23", "D31")
+```
+
+
+## Correlation analysis 
+
+### Graphical overview
+The following offers a overview visualisation of correlations within the data. It is for example noteworthy that there are twice as many women as men. In terms of correlations, at 0.437 the strongest correlation is that between *Points* and *Attitude*, noticeable among both genders. The lowest (absolute) correlation is between *Attitude* and *Age*. This suggests that attitude towards statistics learning does not depend on the age of the respondent, but attitude does play an important role in the points scored by the respondent. Finally, although low, two more correlations worth noting are the 0.146 correlation between _Points_ and _strategic_ approach, and the -0.144 correlation between _Points_ and _surface_ approach. 
+
+```{r echo = F}
+ggpairs(dt, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+In addition, the correlation between _surface_ and _deep_ approach, although minimal among women, is -0.622 among men, suggesting that men who use surface approach are less likely to use deep approach and vice versa. As seen in the figure, there is also some negative correlation between _surface_ approach and _Attitude_, again more among men, as well as _surface_ and _strategic_ approach. 
+
+### Regression model
+
+Based on the overview above, we shall first investigate the potential of a lineral model that assumes _Points_ are explained by the variables _Attitude_, _surface_ and _strategy_. The results of this model are given below:
+```{r echo = F}
+lmmodel2 <- lm(Points ~ Attitude + surf + stra, data = dt)
+summary(lmmodel2)
+```
+
+According to the above results, the only variable for which the p-value is <0.001 is _Attitude_, the variables relating to approach being > 0.05. This means that for these variables we fail to reject the null hypothesis. Thus, below we shall fit a new model with only the statistically significant variable _Attitude_. 
+
+### Relationship between explanatory and target variable
+The results above suggested that only _Attitude_ can be used to explain the dependent variable _Points_. In other words, our model is: 
+
+> **Points** = α + β**Attitude** + ε 
+
+where
+
+* α is Points when Attitude = 0
+
+* β is our coefficient
+
+* ε is an unobservable random, normally distributed variable
+
+The results and a plot illustrating this model are given below:
+```{r echo = F}
+lmmodel <- lm(Points ~ Attitude, data = dt)
+summary(lmmodel)
+
+plot <- qplot(Attitude, Points, data = dt) + geom_smooth(method = "lm")
+plot
+```
+
+The line is positioned so as to have the lowest residuals (differences between observed value and predicted value), but quite a few observations fall further outside of the line. Indeed, the multiple R-squared is 0.1906, indicating that only 19 % of the _Points_-observations are explained by the variable _Attitude_. However, the p-value <0.001 gives reason to believe the variable is nonetheless statistically significant. 
+
+### Diagnostic plots
+The current model assumes that _Attitude_ can be explained by a single explanatory variable, _Attitude_, and that linear regression model (as opposed to e.g. a polynomial regression model) is sufficient for explaining and predicting the observations. To diagnose the model, we shall plot the residuals. Plotting the residuals and fitted, we can see that the model is reasonable. 
+```{r echo = F}
+par(mfrow = c(2,2))
+plot(lmmodel, which = c(1,2,5))
+```
+
+In the _Residuals vs Fitted_ and _Residuals vs Leverage_ plots, the observations are seemingly evenly distributed and there is no visible pattern that would suggest the need for a polynomial regression model. In the Normal Q-Q plot, most the observations line up on the same line, with some deviation only among the lowest and the highest values. This indicates the model is adequate for explaining our dependent variable and that we do not need to resort to a more complex model. 
