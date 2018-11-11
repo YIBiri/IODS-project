@@ -1,4 +1,4 @@
 
 # Who am I
 
-I am a PhD student in linguistics with some previous experience in R and RStudio as well as basic statistics, but with this course I hope to gain more understanding in statistical methods and open data that I could use in my research.   My GitHub repository: [https://github.com/YIBiri/IODS-project](https://github.com/YIBiri/IODS-project/).   In case the link does not work (I seem to have troubles embedding the correct link), please *copy-paste the address*.
+I am a PhD student in linguistics with some previous experience in R and RStudio as well as basic statistics, but with this course I hope to gain more understanding in statistical methods and open data that I could use in my research.   [My GitHub repository](https://github.com/YIBiri/IODS-project/). 
