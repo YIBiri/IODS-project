@@ -1,8 +1,8 @@
 # Logistic regression
 
 _In this section I use a logistic regression model to study what variables impact alcohol consumption._
-```{r echo = F}
-library(tidyr); library(ggplot2); library(dplyr)
+```{r echo = F, eval = F}
+library(tidyr); library(ggplot2); library(dplyr); library(boot)
 ```
 
 ## Data overview
@@ -35,13 +35,15 @@ The hypotheses above reflect only my current intuitions and are not based on res
 
 #### 1. Sex
 The first hypothesis is that male students have higher alcohol consumption than female students. It should be noted that the number of females (198) is around the same as males (184). Below the numbers of high consumption have been given in proportions. 
-```{r echo = F}
-
+```{r echo = F, warning = F}
+library(ggplot2)
 ggplot(alc, aes(sex, ..count..)) + 
   ylab("number of students") +
+  xlab("sex") +
   scale_y_continuous(labels = scales::percent) +
   geom_bar(aes(fill = high_use), position = "fill") +
   ggtitle("Proportion of high consumption by sex")
+
 ```
 
 The figure shows that our hypothesis is supported. As can be seen, male students have a higher percentage off alcohol consumption, supporting the hypothesis that there are more men with high consumption rates than women. 
@@ -49,6 +51,7 @@ The figure shows that our hypothesis is supported. As can be seen, male students
 #### 2. Study time
 Our second hypothesis is that students who study more are less likely to have a high alcohol consumption rate (negative correlation). Study time is measured with the following 4-point scale, representing study hours per week: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours. In the figure below, the findings are again split across sexes. A boxplot was chosen as in spite of the values being numbers, Likert-type data is better thought of as [ordinal rather than continuous data](https://measuringu.com/mean-ordinal/), and any averages or quartiles produced from it are misguiding at best. 
 ```{r echo = F}
+library(ggplot2)
 ggplot(alc, aes(studytime, ..count..)) + 
   ylab("number of students") +
   xlab("category of study time") +
@@ -65,7 +68,7 @@ Here it is hypothesised that students who go out are more likely to have high co
 ```{r echo = F}
 ggplot(alc, aes(goout, ..count..)) + 
   ylab("number of students") +
-  xlab("category of going out")
+  xlab("category of going out") +
   scale_y_continuous(labels = scales::percent) +
   facet_wrap(~sex) +
   geom_bar(aes(fill = high_use), position = "fill") +
@@ -107,13 +110,25 @@ The coefficients of the variables are as follows:
 coef(m)
 ```
 
-As hypothesised, _study time_ is the only variable with negative correlation. _Absences_ has the lowest absolute coefficient.
+As hypothesised, _study time_ is the only explanatory variable with negative correlation. _Absences_ has the lowest absolute coefficient. We shall take the exponents of the coefficients to analyse the odds ratios of the variables as well as their confidence intervals.¨
+
+Odds are calculated as p/(1-p), where _P_ is probability. The odds ratio is the ratio of the odds of two values, thus quantifying their relationship. The odds ratio also represents the increase in odds for an increase in the variable by one unit. The confidence interval then explains the precision of the odds ratio. A 97.5 % confidence interval indicates a range for how precise the odds ratio is: the interval indicates a range with 97.5 % probability of this calculation being correct for this population. 
+
+```{r echo = F, warning = F}
+library(dplyr)
+OddsRatio <- coef(m) %>% exp
+ConfidenceInterval <- confint(m) %>% exp
+cbind(OddsRatio, ConfidenceInterval)
+```
+
+The odds ratios show the increase in the odds for increased high alcohol consumption for every increase in category of _study time_, _going out_ or _absences_. For _sex_, it indicates that the odds of a man having high alcohol consumption is 2.18 higher than women. Ranked from highest to lowest odds ratio, i.e. the most significant change in odds per unit, _sex_ is at the top and _study time_ the lowest. However, the confidence intervals are fairly wide, meaning that a large range is needed to be 97.5 % certain of the matter when it comes to the total population. 
 
 ### Predictive accuracy
 
 Finally, we shall evaluate the prediction accuracy of our logistic regression model. That is, if the model was used to predict each observation, with what frequency would it be able to correctly categorize an observation as having either high or low alcohol consumption rate. In this case the accuracy of our model is as follows (in n of observations and proportions):
 
-```{r echo = F}
+```{r echo = F, warning = F}
+library(dplyr)
 probabilities <- predict(m, type = "response")
 
 # create new column with predictions
@@ -123,17 +138,62 @@ alc <- mutate(alc, probability = probabilities)
 alc <- mutate(alc, prediction = probability > 0.5)
 
 table(high_use = alc$high_use, prediction = alc$prediction)
-table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table %>% round(digits = 2) %>% addmargins
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table %>% addmargins
 ```
 
-The so-called confusion matrix above (with rounded proportions) indicates that our model categorises 66 % (N = 252) of the observations have a low consumption rate and are by the model predicted as such. Correspondingly, 13 % (N = 29) of observations have both high consumption and are accurately predicted as such. The remaining were predicted incorrectly (have high use but were predicted as low, or vice versa). 
+The so-called confusion matrix above (with rounded proportions) indicates that our model categorises 66.0 % (N = 252) of the observations have a low consumption rate and are by the model predicted as such. Correspondingly, 12.8 % (N = 29) of observations have both high consumption and are accurately predicted as such. The remaining were predicted incorrectly (have high use but were predicted as low, or vice versa). 
 
-In short, 79 % of the observations were predicted correctly and 21 % were predicted incorrectly. Visualised, the data appears as follows:
+In short, approx. 78.9 % of the observations were predicted correctly and 21.2 % (0.2120419) were predicted incorrectly. Visualised, the data appears as follows:
 
 ```{r echo = F}
 ggplot(alc, aes(x = probability, y = high_use, col = prediction)) +
+  geom_point() +
   ylab("High Use") +
   xlab("Prediction") +
   ggtitle("Prediction accuracy")
 ```
 
+Supposing that we had not fitted a logistic regression model but simply guessed our way, the number of correct guesses can be different (ideally lower) than the number of corrects predicted by the model. If we assumed none of the students to have a high alcohol consumption rate (probability = 0): our error rate would be as the following:
+
+```{r echo = F}
+# function for calculating mean prediction error
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc$high_use, prob = 0)
+```
+
+We shall also test the predictive power of a 50/50 guessing method where the probability for a student to have a high alcohol consumption rate is assumed to be 0.5 (i.e. the rate is as likely to be high as to be low). We calculate the mean of incorrect guesses as:
+
+```{r echo = F}
+# function for calculating mean prediction error
+loss_func2 <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func2(class = alc$high_use, prob = 0.5)
+
+```
+Interestingly, our calculation would indicate a mean of incorrect guesses is 0, i.e. that all guesses are correct. I find this somewhat suspicious, but unfortunately the investigation of the accuracy of this falls outside of the scope of this analysis.
+
+## Bonus
+
+### 10-fold validation
+
+Lastly, we shall use the so-called 10-fold validation to assess the accuracy of the model fitted above. This method is a form of cross-validation and the main goal is therefore to validate the model on an independent data set that has not been used for training the model. In 10-fold validation, the data is split into 10 parts, from which 9 parts are used for training, and the remaining 1 for testing. The process is then repeated with a different part functioning as testing set. The mean prediction error is as follows:
+
+```{r echo = F}
+library(boot)
+#10-fold cross-validation
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+
+In summary, the predictive of the model on test data is very close to the predictive power of our model (0.2120419).
+The predictive error is also lower than that of a similar model tested in the DataCamp exercises leading up to this analysis, where the explanatory variables were assumed to be _sex_, _absences_ and _failures in classes_. 
