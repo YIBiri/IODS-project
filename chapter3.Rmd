@@ -1,0 +1,139 @@
+# Logistic regression
+
+_In this section I use a logistic regression model to study what variables impact alcohol consumption._
+```{r echo = F}
+library(tidyr); library(ggplot2); library(dplyr)
+```
+
+## Data overview
+
+The data for the present study is a dataset on alcohol consumption in secondary school students in two schools in Portugal. More information (and download) is available [here](https://archive.ics.uci.edu/ml/datasets/Student+Performance). 
+The variables include varibales on e.g. the student's background (family size, education and employment of parents), behaviour (e.g. amount of freetime, health status) as wekk as performance in the subjects of Maths and Portuguese. In the dataset of this study, the original data has already been modified so that variables for _alcohol consumption on weekdays_ and _alcohol consumption on weekends_  has been interpreted into a single variable *alc_use*, which is the mean of the two. Further, a binary column *high_use*has been created based on *alc_use*, where "high_use = TRUE" signifies a mean alcohol consumption greater than 2. 
+
+A list of all variables is shown below:
+```{r echo = F}
+alc <- read.table("data/alc.txt")
+colnames(alc)
+```
+
+Several of the variables are numeric, using a Likert-scale type 1-5 range (very low - very high), including the values for alcohol consumption. Other variables are binary yes/no data, such as whether the student is in a romantic relationship. 
+
+## Variables impacting alcohol consumption
+
+### Hypotheses
+
+The purpose of this study is to explore how variables predict high/low alcohol consumption among the observations. I hypothesise that alcohol consumption is related to the following four variables:
+
+* __Sex__: it is expected that male students have a higher consumption rate than female students. 
+* __Study time__: students who study longer per week are expected to have a lower alcohol consumption (negative correlation). 
+* __Going out with friends__: students who go out will have a higher alcohol consumption rate (positive correlation).
+* __Absences__: students with many absences from school are expected to have higher alcohol consumption (positive correlation).
+
+The hypotheses above reflect only my current intuitions and are not based on research literature on alcohol consumption oron previous familiarisations with the data. It should also be mentioned that the purpose of this analysis is to study the relationship, but not even a strong relationship is necessarily a sign of causality, let alone a sign of which variable is the cause and which the effect.
+
+### Distribution of chosen variables
+
+#### 1. Sex
+The first hypothesis is that male students have higher alcohol consumption than female students. It should be noted that the number of females (198) is around the same as males (184). Below the numbers of high consumption have been given in proportions. 
+```{r echo = F}
+
+ggplot(alc, aes(sex, ..count..)) + 
+  ylab("number of students") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_bar(aes(fill = high_use), position = "fill") +
+  ggtitle("Proportion of high consumption by sex")
+```
+
+The figure shows that our hypothesis is supported. As can be seen, male students have a higher percentage off alcohol consumption, supporting the hypothesis that there are more men with high consumption rates than women. 
+
+#### 2. Study time
+Our second hypothesis is that students who study more are less likely to have a high alcohol consumption rate (negative correlation). Study time is measured with the following 4-point scale, representing study hours per week: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours. In the figure below, the findings are again split across sexes. A boxplot was chosen as in spite of the values being numbers, Likert-type data is better thought of as [ordinal rather than continuous data](https://measuringu.com/mean-ordinal/), and any averages or quartiles produced from it are misguiding at best. 
+```{r echo = F}
+ggplot(alc, aes(studytime, ..count..)) + 
+  ylab("number of students") +
+  xlab("category of study time") +
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~sex) +
+  geom_bar(aes(fill = high_use), position = "fill") +
+  ggtitle("Study time and consumption by sex")  
+```
+
+The graph indicates that high consumption is indeed more common among students with lower weekly totals of study time. Interestingly, male students have a break in the pattern, with students who study 5-10 hours per week having a noticeably lower number of high consumers than all other groups apart from females studying more than 10 hours. However, our overall hypothesis is still supported. 
+
+#### 3. Going out with friends
+Here it is hypothesised that students who go out are more likely to have high consumption rates. The frequency of going out with friends is here measured using a numeric 5-step Likert-scale, where 1 = very low, and 5 = very high. Again, we examine this first in boxplots. 
+```{r echo = F}
+ggplot(alc, aes(goout, ..count..)) + 
+  ylab("number of students") +
+  xlab("category of going out")
+  scale_y_continuous(labels = scales::percent) +
+  facet_wrap(~sex) +
+  geom_bar(aes(fill = high_use), position = "fill") +
+  ggtitle("Frequency of going out by alcohol consumption and sex")
+```
+
+It appears that high consumption is more common among students who go out frequently, but this is especially pronounced among male students, whereas the female students who go out the most have a lower number of high consumers than the second-highest female group. Thus, our hypothesis is applicable mainly for male students.
+
+#### 4. Absences
+Another assumption that we have is that students with high alcohol consumption are also more likely to have more absences from school. Absences are here a numeric number representing the number of absences. We shall explore the numerical value in a boxplot, where the dotted line indicates the mean. 
+
+```{r echo = F}
+ggplot(alc, aes(x = sex, y = absences, col = high_use)) + 
+  geom_boxplot() + 
+  stat_summary(fun.y = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..),  width = .75, linetype = "dashed") +
+  ylab("Absences") +
+  xlab("Sex") +
+  ggtitle("Student absences by alcohol consumption and sex")
+```
+
+The means indicate a difference, but this may be because of outliers. Not counting the outliers marked as dots beyond the whiskers, the boxplots above suggest that there may be a relationship between absences and alcohol among male students, but among female students the differences are quite small, the medians being about even and the main differences being visible in the top 50%. Based only on this, we cannot outright claim that this supports our hypothesis. 
+
+### Fitting a logistic regression model
+
+In this section we shall fit a logistic regression model that could explain and predict high alcohol use among the population. We shall at least not yet remove any of the variables, and our model and its statistical summary is thus as follows. 
+
+> **high_use ~ sex + studytime + goout + absences** 
+
+```{r echo = F}
+m <- glm(high_use ~ sex + studytime + goout + absences, data = alc, family = "binomial")
+summary(m)
+```
+
+Based on the above, our highly statistically significant p<0.001 variables are _goout_ and _absences_, with the variable _sex_ having a statistically significant p-value of <0.01, and _studytime_ having a statistically significant p-value of <0.05. In other words, we fail to reject the null hypotheses for all our variables.
+
+The coefficients of the variables are as follows:
+
+```{r echo = F}
+coef(m)
+```
+
+As hypothesised, _study time_ is the only variable with negative correlation. _Absences_ has the lowest absolute coefficient.
+
+### Predictive accuracy
+
+Finally, we shall evaluate the prediction accuracy of our logistic regression model. That is, if the model was used to predict each observation, with what frequency would it be able to correctly categorize an observation as having either high or low alcohol consumption rate. In this case the accuracy of our model is as follows (in n of observations and proportions):
+
+```{r echo = F}
+probabilities <- predict(m, type = "response")
+
+# create new column with predictions
+alc <- mutate(alc, probability = probabilities)
+
+# new column for whether prediction was accurate
+alc <- mutate(alc, prediction = probability > 0.5)
+
+table(high_use = alc$high_use, prediction = alc$prediction)
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table %>% round(digits = 2) %>% addmargins
+```
+
+The so-called confusion matrix above (with rounded proportions) indicates that our model categorises 66 % (N = 252) of the observations have a low consumption rate and are by the model predicted as such. Correspondingly, 13 % (N = 29) of observations have both high consumption and are accurately predicted as such. The remaining were predicted incorrectly (have high use but were predicted as low, or vice versa). 
+
+In short, 79 % of the observations were predicted correctly and 21 % were predicted incorrectly. Visualised, the data appears as follows:
+
+```{r echo = F}
+ggplot(alc, aes(x = probability, y = high_use, col = prediction)) +
+  ylab("High Use") +
+  xlab("Prediction") +
+  ggtitle("Prediction accuracy")
+```
+

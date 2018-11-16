@@ -1,7 +1,7 @@
 #Ylva Biri, 5.11.2018
 #Open Data Science 2018 Exercise 2
 library(dplyr)
-setwd("C:/Users/Ylva/Documents/GitHub/IODS-project")
+
 
 ##DATA WRANGLING
 
@@ -56,7 +56,7 @@ plot <- qplot(Attitude, Points, data = dt) + geom_smooth(method = "lm")
 
 lmmodel <- lm(Points ~ Attitude, data = dt)
 summary(lmmodel)
-lmmodel2 <- lm(Points ~ Attitude + surf + stra, data = dt)
+lmmodel2 <- lm(Points ~ Attitude + stra, data = dt)
 summary(lmmodel2)
-lmmodel3 <- lm(Points ~ Attitude + surf + stra + gender, data = dt)
+lmmodel3 <- lm(Points ~ Attitude + surf + stra, data = dt)
 summary(lmmodel3)
