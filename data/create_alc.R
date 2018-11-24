@@ -70,7 +70,7 @@ library(tidyr); library(ggplot2)
 
 # Plotting fun
 
-table(high_use = alc$high_use, school = alc$sex) %>% prop.table(2) %>% addmargins %>% round(digits = 2)
+table(high_use = alc$high_use, sex = alc$sex) %>% prop.table(2) %>% addmargins %>% round(digits = 2)
 
 # Sex
 
@@ -100,7 +100,7 @@ ggplot(alc, aes(x = high_use, y = goout, col = sex)) +
 
 ggplot(alc, aes(sex, ..count..)) + 
   ylab("number of students") +
-  face_wrap(~sex)
+  face_wrap(~sex) +
   scale_y_continuous(labels = scales::percent) +
   geom_bar(aes(fill = high_use), position = "fill") +
   ggtitle("Proportion of high consumption by sex")
@@ -147,3 +147,9 @@ tail(alc)
 #confusion matrix
 table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table %>% round(digits = 2) %>% addmargins
 
+# Same as above in plot form
+ggplot(alc, aes(x = probability, y = high_use, col = prediction)) +
+  geom_point() +
+  ylab("High Use") +
+  xlab("Prediction") +
+  ggtitle("Prediction accuracy")
