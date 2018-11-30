@@ -4,6 +4,7 @@
 # 1. Creation & setting up
 setwd("C:/Users/Ylva/Documents/GitHub/IODS-project")
 library(dplyr)
+library(stringr)
 
 
 # 2. Reading data
@@ -22,7 +23,7 @@ dim(gii)
 
 
 # 4. Renaming variables
-colnames(hd) <- c("hdi_rank", "country", "hdi", "lifexp", "exped", "yrsed", "gni_cap", "gni_hdi")
+colnames(hd) <- c("hdi_rank", "country", "hdi", "lifexp", "exped", "yrsed", "gni", "gni_hdi")
 colnames(gii) <- c("gii_rank", "country", "gii", "matmor", "adbirth", "parlperc", "secedF", "secedM", "laborF", "laborM")
 
 
@@ -35,17 +36,54 @@ gii <- mutate(gii, eduratio = secedF / secedM)
 gii <- mutate(gii, labratio = laborF / laborM)
 
 # checking everything is ok
-str(gii)
+head(gii)
 
 
 # 6. Joining datasets using "country"
 human <- inner_join(hd, gii, by = "country", suffix = c(".hd", ".gii"))
 
+# Saving data
+write.table(human, file = "data/human.txt", sep = "\t")
+
+# Check updated data
+humantest <- read.table("data/human.txt")
+
 # checking...
 str(human)
 
-# saving into data folder
+
+
+
+# EXERCISE 5
+
+# GNI to numeric
+str(human)
+human$gni <- str_replace(human$gni, pattern=",", replace ="") %>% as.numeric()
+str(human)
+
+# Exclude unnecessary variables
+keep <- c("country", "eduratio", "labratio", "exped", "lifexp", "gni", "matmor", "adbirth", "parlperc")
+human <- select(human, one_of(keep))
+dim(human2)
+
+# Remove rows with NA values
+human <- filter(human, complete.cases(human))
+
+# Remove regions
+human$country
+# i.e. remove the last 7 rows
+last <- nrow(human) - 7
+human <- human[1:last, ]
+
+# Define rows by country, remove country
+rownames(human) <- human$country
+human <- select(human, -country)
+
+#Check output
+summary(human)
+
+# Save and overwrite old data
 write.table(human, file = "data/human.txt", sep = "\t")
 
-# reading it again, just to make sure :)
-dt <- read.table("data/human.txt")
+# Check updated data
+humantest <- read.table("data/human.txt")

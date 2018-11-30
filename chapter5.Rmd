@@ -1,0 +1,139 @@
+# Dimensionality reduction techniques
+
+_Because analysing and visualising tens of dimensions is much more difficult, it is often useful to reduce the number of dimensions by merging correlating variables together. In this analysis we conduct a_ Principle Component Analysis _ and a_ Multiple Correspondence Analysis_._
+
+```{r echo = F, warning = F, message = F}
+library(ggplot2)
+library(GGally)
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+```
+
+
+## Data overview
+
+The data we use here was created as part of the [UN's Human Development Programme](http://hdr.undp.org/en/content/human-development-index-hdi), reflecting the Human Development Index (HDI), Gross National Income, and variables such as the expected education level or percentage of women in labor in different countries. For an overview, the variables are: 
+
+```{r echo = F}
+human <- read.table("data/human.txt")
+str(human)
+```
+i.e. 
+
+* eduratio: the ratio of the percentage of females vs. males with at least secondary education
+* labratio: the ratio of the percentages of females vs. males in the labour force
+* exped: expected years of education
+* lifexp: life expectancy at birth
+* gni_cap: Gross National Income per capita
+* matmor: maternal mortality ratio
+* adbirth: adolescent birth rate
+* parlperc: percentage of female representatives in parliament
+
+Note that any countries with missing values for any variables have been deleted from the present data. 
+
+```{r echo = F}
+library(ggplot2)
+library(GGally)
+ggpairs(human)
+```
+
+```{r echo = F}
+cor_matrix<-cor(human) %>% corrplot(method="circle", type = "upper", tl.pos = "d", tl.cex = 0.8)
+```
+
+## Principal Component Analysis with Non-Standardized Data
+
+First we shall conduct a Principal Component Analysis (PCA) using the same data as above with non-standardized variables.
+
+```{r echo = F}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.7, 1), col = c("lightblue4", "darkred"))
+```
+
+As seen in the biplot visualisation above, GNI clearly stands out from the other variables. However, this is due to this variable being numerically on a completely different scale than the other variable values, tens of thousands vs. <1 or <100% ratios. This causes the correlation to be unreliable (with only outliers showing) not to mention difficult to analyse. The data must thus be scaled. 
+
+## Principal Component Analysis with Standardized Data
+
+To amend for the abovementioned problem, we must conduct a PCA using a standardized set of the data, where mean = 0 and standard deviation 1. The results are visualised using PC1 and PC2, along with the percentages of explained variance for both principal components. Together the components explain 69.8 of the variance.
+
+```{r echo = F}
+# standardize the variables
+human_std <- scale(human)
+
+# print out summaries of the standardized variables
+summary(human_std)
+
+
+
+# perform principal component analysis (with the SVD method)
+pca_human_std <- prcomp(human_std)
+
+# get percentages of variance
+s <- summary(pca_human_std)
+pca_pr <- round(1*s$importance[2, ], digits = 5)
+pca_pr <- pca_pr * 100
+pca_pr <- round(pca_pr, digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+
+# create object pc_lab to be used as axis labels
+paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human_std, choices = 1:2, cex = c(0.7, 1), col = c("lightblue4", "darkred"), xlab = pc_lab[1], ylab = pc_lab[2])
+```
+
+From this biplot we can see that expected level of education correlates - expectedly - with the ratio of percentages of females vs. males with secondary education as well as gni and life expectancy at birth. Further, these four variables correlate negatively with maternal mortality and adolescent birth rate. We also see that the ratio of percentages of females vs males in labour correlates with the percentage of female representatives in the parliament. 
+
+## Interpretations
+
+I interpret the two principal components identified above as follows: 
+
+* PC1: life and welfare
+* PC2: representation
+
+Along PC1 (53.6% of variation) we have variables that represent life and mortality, but also education and gni, Meanwhile, PC2 (16.2% of variation) represents two variables tied to the representation of females in worklife and politics. Female representation alone does not guarantee low maternal mortality or adolescent birth rate (cf. Mozambique in biplot above), but high education levels or gni also do not guarantee equal representation (cf. Iran or Qatar)
+
+
+
+
+```{r echo = F}
+url <- "https://media.giphy.com/media/lnEqLuAnL1zqw/giphy.gif"
+```
+![](`r url`)
+
+
+# Multiple Correspondence Analysis
+
+Here we shall switch datasets and use data from the FactoMineR-package describing tea consumption and how tea is usually enjoyed. We shall analyse the data through Multiple Correspondence Analysis (MCA). The dataset has 36 variables in total, but here we are interested in the place where and time when the respondents of the survey consume tea. Our variables are: "SPC", "price", "frequency", "how", "How". The results appear as follows:
+
+```{r echo = F}
+library(FactoMineR)
+data(tea)
+keep2 <- c("SPC", "frequency", "how", "How", "sex")
+tea2 <- dplyr::select(tea, one_of(keep2))
+gather(tea2) %>% ggplot(aes(value)) + 
+  facet_wrap("key", scales = "free") + 
+  geom_bar() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+
+```{r echo = F}
+mca <- MCA(tea2)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali")
+
+```
+
+We need up to 6 dimensions to be able to explain even 50 % of the variance. However, it appears for example that the middle class favours unpackaged (loose leaf) tea above other society groups. Further, they do not drink tea with milk as much as the working class. (It is known in sociology that the middle class tends to distinguish itself from lower classes but that their practices differ from those of upper classes.) Raising concerns about the data is that students and females seem to have strong correlation, whereas senior correlates with male. This could indicate a data sampling where a sex is overrepresented in a group. However, investigating the data further falls outside the scope of the current analysis. 
