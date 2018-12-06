@@ -1,6 +1,6 @@
 # Analysis of longitudinal data
 
-_This week we apply the methods learned so far to longitudinal data, i.e. data collected over a longer timeperiod, with several observations per subject.: 
+_This week we apply the methods learned so far to longitudinal data, i.e. data collected over a longer timeperiod, with several observations per subject._ 
 
 ```{r, include=FALSE}
 setwd("C:/Users/Ylva/Documents/GitHub/IODS-project")
